@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Pemutar Musik</title>
+    <style>
+      :root {
+        --bg: #f1f1f4;
+        --panel: #fff;
+        --panel2: #ececf1;
+        --text: #16161a;
+        --muted: #6b6b76;
+        --accent: #1db954;
+        --accentText: #04210f;
+        --line: #dcdce3;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #000;
+          --panel: #121214;
+          --panel2: #1f1f23;
+          --text: #f4f4f6;
+          --muted: #9a9aa6;
+          --accent: #1ed760;
+          --accentText: #04210f;
+          --line: #2a2a30;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #000;
+        --panel: #121214;
+        --panel2: #1f1f23;
+        --text: #f4f4f6;
+        --muted: #9a9aa6;
+        --accent: #1ed760;
+        --accentText: #04210f;
+        --line: #2a2a30;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html {
+        height: 100%;
+        background: var(--bg);
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      body {
+        height: 100%;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+      }
+      .app {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px;
+      }
+      .main {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 340px minmax(0, 1fr);
+        gap: 8px;
+      }
+      .tabs {
+        display: none;
+        gap: 8px;
+      }
+      .tabs button {
+        flex: 1;
+        border: 0;
+        border-radius: 999px;
+        padding: 8px;
+        background: var(--panel);
+        color: var(--muted);
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .tabs button.on {
+        background: var(--text);
+        color: var(--bg);
+      }
+      @media (max-width: 720px) {
+        .tabs {
+          display: flex;
+        }
+        .main {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .main[data-v="lib"] .content {
+          display: none;
+        }
+        .main[data-v="np"] .side {
+          display: none;
+        }
+        .vol {
+          display: none !important;
+        }
+        .bar {
+          grid-template-columns: minmax(0, 1fr) !important;
+        }
+        .cover.big {
+          width: 84px;
+          height: 84px;
+          font-size: 2rem !important;
+        }
+        .hero h1 {
+          font-size: 1.4rem !important;
+        }
+      }
+      .card {
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .side {
+        background: var(--panel);
+      }
+      .side header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 14px 6px;
+      }
+      h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+      .add {
+        background: var(--panel2);
+        border-radius: 999px;
+        padding: 7px 14px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .add:hover {
+        filter: brightness(1.15);
+      }
+      .hint {
+        margin: 0;
+        padding: 0 14px 10px;
+        font-size: 0.75rem;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .scroll {
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+      }
+      .trk {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 7px 14px;
+        cursor: pointer;
+      }
+      .trk:hover {
+        background: var(--panel2);
+      }
+      .trk .t {
+        min-width: 0;
+        flex: 1;
+      }
+      .trk b,
+      .trk small {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .trk b {
+        font-size: 0.92rem;
+      }
+      .trk small {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .trk.on b {
+        color: var(--accent);
+      }
+      .trk .x {
+        background: none;
+        border: 0;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 4px 8px;
+        border-radius: 50%;
+        opacity: 0;
+      }
+      .trk:hover .x,
+      .trk .x:focus {
+        opacity: 1;
+      }
+      .trk .x:hover {
+        color: var(--text);
+      }
+      .cover {
+        background-size: cover;
+        background-position: center;
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        color: #fff;
+        border-radius: 6px;
+        flex: none;
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      }
+      .cover.big {
+        width: 160px;
+        height: 160px;
+        font-size: 3.6rem;
+        border-radius: 8px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      }
+      .eq {
+        display: inline-flex;
+        gap: 2px;
+        align-items: flex-end;
+        height: 14px;
+        margin-left: 6px;
+      }
+      .eq i {
+        width: 3px;
+        background: var(--accent);
+        animation: eq 0.9s infinite ease-in-out;
+      }
+      .eq i:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .eq i:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes eq {
+        0%,
+        100% {
+          height: 3px;
+        }
+        50% {
+          height: 14px;
+        }
+      }
+      .content {
+        background: linear-gradient(
+          165deg,
+          hsl(var(--h, 150) 45% 34%),
+          hsl(var(--h, 150) 35% 12%) 72%
+        );
+        color: #fff;
+        transition: background 0.4s;
+      }
+      .hero {
+        display: flex;
+        align-items: flex-end;
+        gap: 18px;
+        padding: 20px 22px 12px;
+      }
+      .hero .meta {
+        min-width: 0;
+        flex: 1;
+      }
+      .hero small {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        opacity: 0.8;
+      }
+      .hero h1 {
+        margin: 4px 0 4px;
+        font-size: clamp(1.5rem, 4vw, 2.6rem);
+        line-height: 1.1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      .hero span {
+        opacity: 0.85;
+        font-size: 0.95rem;
+      }
+      .pill {
+        background: rgba(255, 255, 255, 0.16);
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+        color: #fff;
+      }
+      .pill:hover {
+        background: rgba(255, 255, 255, 0.26);
+      }
+      .pill.pri {
+        background: #fff;
+        color: #000;
+      }
+      .lyr {
+        position: relative;
+        padding: 14px 22px 40vh;
+      }
+      .ln {
+        font-size: clamp(1.25rem, 3.2vw, 2rem);
+        font-weight: 800;
+        line-height: 1.3;
+        margin: 0 0 0.75em;
+        color: rgba(255, 255, 255, 0.5);
+        transition:
+          color 0.25s,
+          transform 0.25s;
+        transform-origin: left center;
+      }
+      .synced .ln {
+        cursor: pointer;
+      }
+      .synced .ln:hover {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .ln.past {
+        color: rgba(255, 255, 255, 0.38);
+      }
+      .ln.on {
+        color: #fff;
+        transform: scale(1.03);
+      }
+      .plain .ln {
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.45em;
+      }
+      .empty {
+        line-height: 1.6;
+        opacity: 0.8;
+        max-width: 34em;
+      }
+      #ed {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        padding: 0 22px 16px;
+        gap: 8px;
+      }
+      #ta {
+        flex: 1;
+        min-height: 0;
+        resize: none;
+        background: rgba(0, 0, 0, 0.35);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 10px;
+        font:
+          0.85rem/1.5 ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      .bar {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 10px 14px;
+        display: grid;
+        grid-template-columns: 1fr minmax(260px, 2fr) 1fr;
+        gap: 14px;
+        align-items: center;
+      }
+      .now {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        min-width: 0;
+      }
+      .now div {
+        min-width: 0;
+      }
+      .now b,
+      .now small {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .now small {
+        color: var(--muted);
+      }
+      .ctr {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: center;
+        min-width: 0;
+      }
+      .btns {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .ib {
+        background: none;
+        border: 0;
+        color: var(--muted);
+        cursor: pointer;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        position: relative;
+      }
+      .ib:hover {
+        color: var(--text);
+      }
+      .ib[aria-pressed="true"] {
+        color: var(--accent);
+      }
+      .ib.play {
+        background: var(--text);
+        color: var(--bg);
+        width: 42px;
+        height: 42px;
+      }
+      .ib.play:hover {
+        color: var(--bg);
+        transform: scale(1.07);
+      }
+      #rep[data-m="2"]::after {
+        content: "1";
+        position: absolute;
+        font-size: 9px;
+        font-weight: 800;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .seek {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        width: 100%;
+        margin: 0;
+        cursor: pointer;
+      }
+      .vol {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-end;
+        color: var(--muted);
+      }
+      .vol input {
+        max-width: 110px;
+      }
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        background: var(--text);
+        color: var(--bg);
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        z-index: 5;
+        max-width: 90vw;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <nav class="tabs">
+        <button data-v="lib">Perpustakaan</button
+        ><button data-v="np" class="on">Sedang diputar</button>
+      </nav>
+      <div class="main" id="main" data-v="np">
+        <aside class="card side">
+          <header>
+            <h2>Perpustakaan</h2>
+            <label class="add"
+              >+ Tambah lagu<input
+                id="file"
+                type="file"
+                accept="audio/*,.lrc,.txt"
+                multiple
+                hidden
+            /></label>
+          </header>
+          <p class="hint">
+            Pilih file lagu bersama file lirik .lrc atau .txt yang namanya sama,
+            maka lirik langsung terpasang. Lirik di tag ID3 juga dibaca
+            otomatis. Bisa juga drag and drop. Lagu tersimpan di browser ini.
+          </p>
+          <div id="list" class="scroll"></div>
+        </aside>
+        <section class="card content" id="content">
+          <div class="hero">
+            <div class="cover big" id="cover"></div>
+            <div class="meta">
+              <small>LAGU</small>
+              <h1 id="ntitle">-</h1>
+              <span id="nartist">-</span>
+            </div>
+            <button class="pill" id="edit">Edit lirik</button>
+          </div>
+          <div id="ed" hidden>
+            <textarea
+              id="ta"
+              placeholder="Tempel lirik di sini.&#10;Format tersinkron (LRC):&#10;[00:12.50] Baris pertama&#10;[00:16.00] Baris kedua&#10;Atau tulis lirik biasa tanpa waktu."
+            ></textarea>
+            <div class="row">
+              <button class="pill pri" id="save">Simpan</button
+              ><button class="pill" id="cancel">Batal</button>
+            </div>
+          </div>
+          <div id="lyr" class="scroll lyr"></div>
+        </section>
+      </div>
+      <div class="bar">
+        <div class="now">
+          <div class="cover" id="mini"></div>
+          <div><b id="btitle">-</b><small id="bartist">-</small></div>
+        </div>
+        <div class="ctr">
+          <div class="btns">
+            <button class="ib" id="shuf" aria-pressed="false" title="Acak">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+              </svg>
+            </button>
+            <button class="ib" id="prev" title="Sebelumnya">
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="currentColor"
+              >
+                <path d="M6 6h2v12H6zM20 6v12L9.5 12z" />
+              </svg>
+            </button>
+            <button class="ib play" id="pp" title="Putar / Jeda"></button>
+            <button class="ib" id="next" title="Berikutnya">
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="currentColor"
+              >
+                <path d="M16 6h2v12h-2zM4 6v12l10.5-6z" />
+              </svg>
+            </button>
+            <button
+              class="ib"
+              id="rep"
+              data-m="0"
+              aria-pressed="false"
+              title="Ulangi: mati"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"
+                />
+              </svg>
+            </button>
+          </div>
+          <div class="seek">
+            <span id="cur">0:00</span
+            ><input id="bar" type="range" min="0" max="1000" value="0" /><span
+              id="dur"
+              >0:00</span
+            >
+          </div>
+        </div>
+        <div class="vol">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M3 9v6h4l5 4V5L7 9zM16 8a5 5 0 0 1 0 8z" /></svg
+          ><input
+            id="vol"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.8"
+          />
+        </div>
+      </div>
+    </div>
+    <div id="toast" hidden></div>
+    <script>
+      (function () {
+        var $ = function (s) {
+            return document.querySelector(s);
+          },
+          SR = 22050;
+        var PLAY =
+          '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        var PAUSE =
+          '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+        function fmt(t) {
+          t = isFinite(t) ? t : 0;
+          return (
+            Math.floor(t / 60) +
+            ":" +
+            String(Math.floor(t % 60)).padStart(2, "0")
+          );
+        }
+        function lrc(t) {
+          var m = Math.floor(t / 60);
+          return (
+            "[" +
+            String(m).padStart(2, "0") +
+            ":" +
+            (t - m * 60).toFixed(2).padStart(5, "0") +
+            "]"
+          );
+        }
+        var tt;
+        function toast(s) {
+          var e = $("#toast");
+          e.textContent = s;
+          e.hidden = false;
+          clearTimeout(tt);
+          tt = setTimeout(function () {
+            e.hidden = true;
+          }, 3500);
+        }
+
+        // ---------- Lagu demo (nada sintesis) ----------
+        function wav(notes, beat) {
+          var per = Math.round(beat * SR),
+            n = notes.length * per,
+            f = new Float32Array(n);
+          notes.forEach(function (m, k) {
+            if (!m) return;
+            var fr = 440 * Math.pow(2, (m - 69) / 12),
+              len = Math.round(per * 0.95);
+            for (var j = 0; j < len; j++) {
+              var t = j / SR,
+                e =
+                  Math.min(1, j / 220) *
+                  Math.exp((-2.5 * j) / len) *
+                  Math.min(1, (len - j) / 200);
+              f[k * per + j] +=
+                (Math.sin(6.2832 * fr * t) +
+                  0.35 * Math.sin(12.5664 * fr * t) +
+                  0.12 * Math.sin(18.85 * fr * t)) *
+                e;
+            }
+          });
+          var b = new ArrayBuffer(44 + n * 2),
+            v = new DataView(b);
+          function w(o, s) {
+            for (var i = 0; i < s.length; i++)
+              v.setUint8(o + i, s.charCodeAt(i));
+          }
+          w(0, "RIFF");
+          v.setUint32(4, 36 + n * 2, true);
+          w(8, "WAVEfmt ");
+          v.setUint32(16, 16, true);
+          v.setUint16(20, 1, true);
+          v.setUint16(22, 1, true);
+          v.setUint32(24, SR, true);
+          v.setUint32(28, SR * 2, true);
+          v.setUint16(32, 2, true);
+          v.setUint16(34, 16, true);
+          w(36, "data");
+          v.setUint32(40, n * 2, true);
+          for (var i = 0; i < n; i++)
+            v.setInt16(
+              44 + i * 2,
+              Math.max(-1, Math.min(1, f[i] * 0.45)) * 32767,
+              true,
+            );
+          return URL.createObjectURL(new Blob([b], { type: "audio/wav" }));
+        }
+        var D = [];
+
+        // ---------- Lirik & tag ID3 ----------
+        function parse(txt) {
+          var out = [],
+            synced = false;
+          txt.split(/\r?\n/).forEach(function (l) {
+            var re = /\[(\d+):(\d+(?:\.\d+)?)\]/g,
+              m,
+              ts = [];
+            while ((m = re.exec(l))) ts.push(Number(m[1]) * 60 + Number(m[2]));
+            var text = l.replace(/\[[^\]]*\]/g, "").trim();
+            if (ts.length) {
+              synced = true;
+              ts.forEach(function (t) {
+                out.push({ t: t, text: text });
+              });
+            } else if (text) out.push({ t: null, text: text });
+          });
+          if (synced) {
+            out = out
+              .filter(function (x) {
+                return x.t !== null;
+              })
+              .sort(function (a, b) {
+                return a.t - b.t;
+              });
+          }
+          return { lines: out, synced: synced };
+        }
+        function dec(b, enc) {
+          var l =
+            enc === 0
+              ? "iso-8859-1"
+              : enc === 3
+                ? "utf-8"
+                : enc === 2
+                  ? "utf-16be"
+                  : b[0] === 254 && b[1] === 255
+                    ? "utf-16be"
+                    : "utf-16le";
+          return new TextDecoder(l).decode(b).replace(/\0+$/, "");
+        }
+        function term(f, e, enc) {
+          if (enc === 1 || enc === 2) {
+            while (e + 1 < f.length && !(f[e] === 0 && f[e + 1] === 0)) e += 2;
+            return e + 2;
+          }
+          while (e < f.length && f[e] !== 0) e++;
+          return e + 1;
+        }
+        async function readTags(file) {
+          var h = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+          if (String.fromCharCode(h[0], h[1], h[2]) !== "ID3" || h[3] < 3)
+            return {};
+          var ver = h[3],
+            size =
+              ((h[6] & 127) << 21) |
+              ((h[7] & 127) << 14) |
+              ((h[8] & 127) << 7) |
+              (h[9] & 127);
+          if (size > 16e6) size = 16e6;
+          var buf = await file.slice(0, 10 + size).arrayBuffer(),
+            u = new Uint8Array(buf),
+            v = new DataView(buf),
+            p = 10,
+            out = {};
+          while (p + 10 <= u.length) {
+            var id = String.fromCharCode(u[p], u[p + 1], u[p + 2], u[p + 3]);
+            if (!/^[A-Z0-9]{4}$/.test(id)) break;
+            var fs =
+              ver === 4
+                ? ((u[p + 4] & 127) << 21) |
+                  ((u[p + 5] & 127) << 14) |
+                  ((u[p + 6] & 127) << 7) |
+                  (u[p + 7] & 127)
+                : v.getUint32(p + 4);
+            p += 10;
+            if (fs <= 0 || p + fs > u.length) break;
+            var f = u.subarray(p, p + fs);
+            p += fs;
+            if (id === "TIT2") out.title = dec(f.subarray(1), f[0]);
+            else if (id === "TPE1") out.artist = dec(f.subarray(1), f[0]);
+            else if (id === "USLT")
+              out.lyrics = dec(f.subarray(term(f, 4, f[0])), f[0]);
+            else if (id === "APIC" && !out.cover) {
+              var e = 1;
+              while (e < f.length && f[e] !== 0) e++;
+              var mime = String.fromCharCode.apply(null, f.subarray(1, e));
+              e = term(f, e + 2, f[0]);
+              out.cover = new Blob([f.slice(e)], {
+                type: mime.indexOf("/") > 0 ? mime : "image/jpeg",
+              });
+            }
+          }
+          return out;
+        }
+
+        // ---------- Penyimpanan (IndexedDB) ----------
+        var db = null;
+        function openDB() {
+          return new Promise(function (res) {
+            try {
+              var r = indexedDB.open("pemutar", 1);
+              r.onupgradeneeded = function () {
+                r.result.createObjectStore("t", {
+                  keyPath: "id",
+                  autoIncrement: true,
+                });
+              };
+              r.onsuccess = function () {
+                res(r.result);
+              };
+              r.onerror = function () {
+                res(null);
+              };
+            } catch (e) {
+              res(null);
+            }
+          });
+        }
+        function tx(mode, fn) {
+          return new Promise(function (res) {
+            if (!db) return res(null);
+            try {
+              var t = db.transaction("t", mode),
+                q = fn(t.objectStore("t"));
+              t.oncomplete = function () {
+                res(q && q.result);
+              };
+              t.onerror = t.onabort = function () {
+                res(null);
+              };
+            } catch (e) {
+              res(null);
+            }
+          });
+        }
+        function put(r) {
+          return tx("readwrite", function (s) {
+            return s.put(r);
+          });
+        }
+
+        // ---------- Daftar lagu ----------
+        var T = D.map(function (d, i) {
+          var beat = 60 / d.bpm,
+            lines = d.lines.map(function (x, k) {
+              return { t: k * 4 * beat, text: x };
+            });
+          return {
+            demo: true,
+            title: d.title,
+            artist: "Demo Synth",
+            src: wav(d.notes, beat),
+            cover: null,
+            lyr: { lines: lines, synced: true },
+            raw: lines
+              .map(function (l) {
+                return lrc(l.t) + " " + l.text;
+              })
+              .join("\n"),
+          };
+        });
+        function mk(r) {
+          return {
+            rec: r,
+            title: r.title,
+            artist: r.artist,
+            src: URL.createObjectURL(r.blob),
+            cover: r.cover ? URL.createObjectURL(r.cover) : null,
+            raw: r.raw || "",
+            lyr: parse(r.raw || ""),
+          };
+        }
+        function hue(t) {
+          var s = t.title + t.artist,
+            h = 0;
+          for (var i = 0; i < s.length; i++)
+            h = (h * 31 + s.charCodeAt(i)) % 360;
+          return h;
+        }
+        function setCover(el, t) {
+          if (t.cover) {
+            el.style.backgroundImage = "url(" + t.cover + ")";
+            el.textContent = "";
+          } else {
+            var h = hue(t);
+            el.style.backgroundImage =
+              "linear-gradient(135deg,hsl(" +
+              h +
+              " 65% 48%),hsl(" +
+              ((h + 50) % 360) +
+              " 65% 30%))";
+            el.textContent = (t.title || "?").charAt(0).toUpperCase();
+          }
+        }
+
+        var au = new Audio(),
+          cur = -1,
+          shuffle = false,
+          rep = 0,
+          els = [],
+          act = -1;
+        var list = $("#list"),
+          lyr = $("#lyr"),
+          pp = $("#pp"),
+          bar = $("#bar"),
+          main = $("#main");
+        pp.innerHTML = PLAY;
+
+        function renderList() {
+          list.innerHTML = "";
+          T.forEach(function (t, i) {
+            var r = document.createElement("div");
+            r.className = "trk" + (i === cur ? " on" : "");
+            var c = document.createElement("div");
+            c.className = "cover";
+            setCover(c, t);
+            var w = document.createElement("div");
+            w.className = "t";
+            var a = document.createElement("b");
+            a.textContent = t.title;
+            if (i === cur && !au.paused) {
+              var q = document.createElement("span");
+              q.className = "eq";
+              q.innerHTML = "<i></i><i></i><i></i>";
+              a.appendChild(q);
+            }
+            var s = document.createElement("small");
+            s.textContent = t.artist;
+            w.appendChild(a);
+            w.appendChild(s);
+            r.appendChild(c);
+            r.appendChild(w);
+            if (!t.demo) {
+              var x = document.createElement("button");
+              x.className = "x";
+              x.title = "Hapus";
+              x.textContent = "\u00D7";
+              x.onclick = function (e) {
+                e.stopPropagation();
+                remove(i);
+              };
+              r.appendChild(x);
+            }
+            r.onclick = function () {
+              main.dataset.v = "np";
+              syncTabs();
+              load(i, true);
+            };
+            list.appendChild(r);
+          });
+        }
+        function renderLyrics() {
+          lyr.innerHTML = "";
+          els = [];
+          act = -1;
+          var L = T[cur].lyr;
+          lyr.className =
+            "scroll lyr" +
+            (L && L.lines.length ? (L.synced ? " synced" : " plain") : "");
+          if (!L || !L.lines.length) {
+            var p = document.createElement("p");
+            p.className = "empty";
+            p.textContent =
+              "Lirik belum tersedia untuk lagu ini. Tambahkan file .lrc atau .txt dengan nama yang sama seperti file lagunya, atau klik \u201CEdit lirik\u201D untuk menempelkan lirik.";
+            lyr.appendChild(p);
+            return;
+          }
+          L.lines.forEach(function (l) {
+            var d = document.createElement("p");
+            d.className = "ln";
+            d.textContent = l.text;
+            if (L.synced)
+              d.onclick = function () {
+                au.currentTime = l.t;
+                au.play();
+              };
+            lyr.appendChild(d);
+            els.push(d);
+          });
+          lyr.scrollTop = 0;
+        }
+        function load(i, play) {
+          cur = i;
+          var t = T[i];
+          au.src = t.src;
+          $("#ntitle").textContent = t.title;
+          $("#nartist").textContent = t.artist;
+          $("#btitle").textContent = t.title;
+          $("#bartist").textContent = t.artist;
+          setCover($("#cover"), t);
+          setCover($("#mini"), t);
+          $("#content").style.setProperty("--h", hue(t));
+          bar.value = 0;
+          $("#cur").textContent = "0:00";
+          $("#dur").textContent = "0:00";
+          renderLyrics();
+          renderList();
+          closeEd();
+          if (play) au.play().catch(function () {});
+        }
+        function remove(i) {
+          var t = T[i];
+          if (t.rec && t.rec.id != null)
+            tx("readwrite", function (s) {
+              return s.delete(t.rec.id);
+            });
+          URL.revokeObjectURL(t.src);
+          T.splice(i, 1);
+          if (i === cur) {
+            au.pause();
+            load(Math.min(i, T.length - 1), false);
+          } else {
+            if (i < cur) cur--;
+            renderList();
+          }
+        }
+        function next(auto) {
+          if (auto && rep === 2) {
+            au.currentTime = 0;
+            au.play();
+            return;
+          }
+          if (auto && rep === 0 && !shuffle && cur === T.length - 1) {
+            au.pause();
+            load(0, false);
+            return;
+          }
+          var n;
+          if (shuffle && T.length > 1) {
+            do {
+              n = Math.floor(Math.random() * T.length);
+            } while (n === cur);
+          } else n = (cur + 1) % T.length;
+          load(n, true);
+        }
+        function prev() {
+          if (au.currentTime > 3) {
+            au.currentTime = 0;
+            return;
+          }
+          load((cur - 1 + T.length) % T.length, true);
+        }
+        function sync() {
+          var L = T[cur].lyr;
+          if (!L || !L.synced) return;
+          var t = au.currentTime + 0.15,
+            k = -1;
+          for (var i = 0; i < L.lines.length; i++) {
+            if (L.lines[i].t <= t) k = i;
+            else break;
+          }
+          if (k === act) return;
+          act = k;
+          els.forEach(function (e, i) {
+            e.classList.toggle("on", i === k);
+            e.classList.toggle("past", i < k);
+          });
+          if (k >= 0) {
+            var e = els[k];
+            lyr.scrollTo({
+              top: e.offsetTop - lyr.clientHeight / 2 + e.clientHeight / 2,
+              behavior: "smooth",
+            });
+          }
+        }
+
+        // ---------- Tambah lagu + lirik otomatis ----------
+        async function addFiles(fl) {
+          fl = Array.prototype.slice.call(fl);
+          var songs = [],
+            texts = {};
+          fl.forEach(function (f) {
+            var m = f.name.match(/\.([^.]+)$/),
+              ext = m ? m[1].toLowerCase() : "",
+              base = f.name
+                .replace(/\.[^.]+$/, "")
+                .toLowerCase()
+                .trim();
+            if (ext === "lrc" || ext === "txt") texts[base] = f;
+            else if (
+              /^audio\//.test(f.type) ||
+              /^(mp3|m4a|wav|ogg|oga|flac|aac|opus|weba)$/.test(ext)
+            )
+              songs.push({ f: f, base: base });
+          });
+          if (!songs.length && !Object.keys(texts).length) {
+            toast("Tidak ada file lagu atau lirik yang dikenali");
+            return;
+          }
+          var first = -1,
+            withLyr = 0;
+          for (var s of songs) {
+            var tg = {};
+            try {
+              tg = await readTags(s.f);
+            } catch (e) {}
+            var nm = s.f.name.replace(/\.[^.]+$/, ""),
+              parts = nm.split(/\s+-\s+/);
+            var raw = tg.lyrics || "";
+            if (texts[s.base]) {
+              raw = await texts[s.base].text();
+              delete texts[s.base];
+            }
+            if (raw.trim()) withLyr++;
+            var rec = {
+              base: s.base,
+              title:
+                tg.title ||
+                (parts.length > 1 ? parts.slice(1).join(" - ") : nm),
+              artist:
+                tg.artist ||
+                (parts.length > 1 ? parts[0] : "Artis tidak diketahui"),
+              blob: s.f,
+              cover: tg.cover || null,
+              raw: raw,
+            };
+            var id = await put(rec);
+            if (id != null) rec.id = id;
+            T.push(mk(rec));
+            if (first < 0) first = T.length - 1;
+          }
+          for (var k in texts) {
+            var t = T.find(function (x) {
+              return x.rec && x.rec.base === k;
+            });
+            if (t) {
+              t.raw = await texts[k].text();
+              t.lyr = parse(t.raw);
+              t.rec.raw = t.raw;
+              await put(t.rec);
+              withLyr++;
+              if (T[cur] === t) renderLyrics();
+            }
+          }
+          renderList();
+          if (first >= 0) {
+            main.dataset.v = "np";
+            syncTabs();
+            load(first, true);
+          }
+          toast(
+            songs.length
+              ? songs.length + " lagu ditambahkan, " + withLyr + " dengan lirik"
+              : withLyr + " lirik dipasang",
+          );
+        }
+
+        // ---------- Kontrol ----------
+        au.volume = 0.8;
+        au.addEventListener("timeupdate", function () {
+          if (au.duration)
+            bar.value = Math.round((au.currentTime / au.duration) * 1000);
+          $("#cur").textContent = fmt(au.currentTime);
+          sync();
+        });
+        au.addEventListener("loadedmetadata", function () {
+          $("#dur").textContent = fmt(au.duration);
+        });
+        au.addEventListener("play", function () {
+          pp.innerHTML = PAUSE;
+          renderList();
+        });
+        au.addEventListener("pause", function () {
+          pp.innerHTML = PLAY;
+          renderList();
+        });
+        au.addEventListener("ended", function () {
+          next(true);
+        });
+        pp.onclick = function () {
+          if (au.paused) au.play().catch(function () {});
+          else au.pause();
+        };
+        $("#next").onclick = function () {
+          next(false);
+        };
+        $("#prev").onclick = prev;
+        bar.oninput = function () {
+          if (au.duration) au.currentTime = (bar.value / 1000) * au.duration;
+        };
+        $("#vol").oninput = function (e) {
+          au.volume = Number(e.target.value);
+        };
+        $("#shuf").onclick = function (e) {
+          shuffle = !shuffle;
+          e.currentTarget.setAttribute("aria-pressed", shuffle);
+        };
+        $("#rep").onclick = function (e) {
+          rep = (rep + 1) % 3;
+          var b = e.currentTarget;
+          b.dataset.m = rep;
+          b.setAttribute("aria-pressed", rep > 0);
+          b.title = "Ulangi: " + ["mati", "semua", "satu lagu"][rep];
+        };
+        $("#file").onchange = function (e) {
+          addFiles(e.target.files);
+          e.target.value = "";
+        };
+        window.addEventListener("dragover", function (e) {
+          e.preventDefault();
+        });
+        window.addEventListener("drop", function (e) {
+          e.preventDefault();
+          if (e.dataTransfer && e.dataTransfer.files.length)
+            addFiles(e.dataTransfer.files);
+        });
+        function closeEd() {
+          $("#ed").hidden = true;
+          lyr.hidden = false;
+        }
+        $("#edit").onclick = function () {
+          $("#ta").value = T[cur].raw || "";
+          $("#ed").hidden = false;
+          lyr.hidden = true;
+          $("#ta").focus();
+        };
+        $("#cancel").onclick = closeEd;
+        $("#save").onclick = function () {
+          var t = T[cur];
+          t.raw = $("#ta").value;
+          t.lyr = parse(t.raw);
+          if (t.rec) {
+            t.rec.raw = t.raw;
+            put(t.rec);
+          }
+          closeEd();
+          renderLyrics();
+          sync();
+        };
+        function syncTabs() {
+          document.querySelectorAll(".tabs button").forEach(function (b) {
+            b.classList.toggle("on", b.dataset.v === main.dataset.v);
+          });
+        }
+        document.querySelectorAll(".tabs button").forEach(function (b) {
+          b.onclick = function () {
+            main.dataset.v = b.dataset.v;
+            syncTabs();
+          };
+        });
+        document.addEventListener("keydown", function (e) {
+          if (
+            e.code === "Space" &&
+            !/INPUT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)
+          ) {
+            e.preventDefault();
+            pp.click();
+          }
+        });
+
+        load(0, false);
+        openDB()
+          .then(function (d) {
+            db = d;
+            return tx("readonly", function (s) {
+              return s.getAll();
+            });
+          })
+          .then(function (rows) {
+            if (rows && rows.length) {
+              rows.forEach(function (r) {
+                T.push(mk(r));
+              });
+              renderList();
+            }
+          });
+      })();
+    </script>
+  </body>
+</html>
